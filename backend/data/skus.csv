@@ -1,0 +1,20 @@
+sku_id,vendor_id,category,product_name,is_live
+SKU-0101,V01,womenswear,Block print cotton kurta,true
+SKU-0102,V01,womenswear,"Anarkali kurta, indigo",true
+SKU-0103,V01,womenswear,"Straight kurta, mustard",false
+SKU-0201,V02,womenswear,"Art silk saree, maroon",true
+SKU-0202,V02,womenswear,"Georgette saree, green",true
+SKU-0203,V02,womenswear,Printed dupatta,true
+SKU-0301,V03,mens,"Round neck t-shirt, pack of 2",true
+SKU-0302,V03,mens,"Polo t-shirt, navy",true
+SKU-0303,V03,kidswear,Kids printed t-shirt,true
+SKU-0401,V04,mens,"Wool blend sweater, grey",true
+SKU-0402,V04,mens,Sleeveless cardigan,true
+SKU-0403,V04,mens,Thermal inner set,false
+SKU-0501,V05,womenswear,Handloom cotton kurta,true
+SKU-0502,V05,womenswear,Embroidered tunic,true
+SKU-0601,V06,kidswear,Girls cotton frock,true
+SKU-0602,V06,kidswear,Boys kurta pyjama set,true
+SKU-0603,V06,kidswear,Kids hooded jacket,true
+SKU-0701,V07,womenswear,"Chikankari kurta, white",true
+SKU-0702,V07,womenswear,Chikankari palazzo set,true

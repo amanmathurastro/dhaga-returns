@@ -1,0 +1,42 @@
+# Render Blueprint for the backend (FastAPI). The frontend is deployed separately.
+# In Render: New > Blueprint > pick this repository. Render then asks for the secret values below.
+
+services:
+  - type: web
+    name: dhaga-returns-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    # One worker on purpose: a pipeline run happens inside this process.
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      # Secrets: typed into the Render dashboard, never stored in this file.
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: SUPABASE_DB_URL # use the Supabase "Session pooler" string (works over IPv4)
+        sync: false
+      - key: FRONTEND_ORIGINS # the deployed frontend URL, e.g. https://your-app.vercel.app
+        sync: false
+      # Settings: change here or in the dashboard.
+      - key: MODEL_A_ID
+        value: google/gemini-3.5-flash-lite
+      - key: MODEL_B_ID
+        value: openai/gpt-4.1
+      - key: CONFIDENCE_THRESHOLD
+        value: "0.7"
+      - key: MIN_RETURNS_TO_FLAG
+        value: "5"
+      - key: LIFT_THRESHOLD
+        value: "2"
+      - key: MODEL_A_INPUT_USD_PER_MTOK
+        value: "0.30"
+      - key: MODEL_A_OUTPUT_USD_PER_MTOK
+        value: "2.50"
+      - key: MODEL_B_INPUT_USD_PER_MTOK
+        value: "2.00"
+      - key: MODEL_B_OUTPUT_USD_PER_MTOK
+        value: "8.00"
