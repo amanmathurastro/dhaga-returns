@@ -59,6 +59,7 @@ class ErrorOut(BaseModel):
 class HealthOut(BaseModel):
     status: Literal["ok"]
     database: Literal["ok", "unreachable"]
+    database_problem: Optional[str] = None  # why it is unreachable; never contains credentials
     openrouter_key_present: bool
 
 

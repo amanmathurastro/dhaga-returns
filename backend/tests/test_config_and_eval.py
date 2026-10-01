@@ -88,3 +88,28 @@ def test_confidence_separation():
     sep = confidence_separation(ROWS, "a")
     assert (sep.n_right, sep.n_wrong) == (1, 2)
     assert sep.mean_when_right == 0.95 and sep.mean_when_wrong == pytest.approx(0.7)
+
+
+@pytest.mark.parametrize(
+    "driver_message, expected",
+    [
+        ('connection failed: FATAL:  password authentication failed for user "postgres"', "rejected the password"),
+        ("connection failed: FATAL:  Tenant or user not found", "postgres.<project-ref>"),
+        ("connection is bad: Network is unreachable", "Session pooler"),
+        ('failed to resolve host \'151622@db.x.supabase.co\': [Errno -2] Name or service not known', "host name"),
+        ("connection timeout expired", "timed out"),
+        ("something nobody predicted", "Could not connect to the database (OperationalError)"),
+    ],
+)
+def test_database_problem_is_explained_without_leaking_the_url(monkeypatch, driver_message, expected):
+    import psycopg
+
+    from app import db
+
+    def failing_connect():
+        raise psycopg.OperationalError(driver_message)
+
+    monkeypatch.setattr(db, "connect", failing_connect)
+    problem = db.ping_problem()
+    assert expected in problem
+    assert "supabase.co" not in problem and "151622" not in problem

@@ -9,8 +9,10 @@ router = APIRouter(tags=["health"])
 
 @router.get("/health", response_model=HealthOut)
 def health() -> HealthOut:
+    problem = db.ping_problem()
     return HealthOut(
         status="ok",
-        database="ok" if db.ping() else "unreachable",
+        database="unreachable" if problem else "ok",
+        database_problem=problem,
         openrouter_key_present=bool(get_settings().OPENROUTER_API_KEY),
     )

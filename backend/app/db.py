@@ -23,13 +23,37 @@ def connect() -> Iterator[psycopg.Connection]:
         yield conn
 
 
-def ping() -> bool:
+# Driver message fragment -> what to tell the person deploying. Never includes the URL itself.
+_CONNECT_HINTS = (
+    ("password authentication failed", "The database rejected the password in SUPABASE_DB_URL. An @ in the password must be written as %40."),
+    ("tenant or user not found", "The pooler does not know this user. With the pooler the username is postgres.<project-ref>, not postgres."),
+    ("network is unreachable", "This server cannot reach that host. The direct db.<project>.supabase.co host is IPv6 only: use the Session pooler string."),
+    ("no route to host", "This server cannot reach that host. The direct db.<project>.supabase.co host is IPv6 only: use the Session pooler string."),
+    ("could not translate host name", "The host name in SUPABASE_DB_URL does not exist. Check for a typo, or an unencoded @ in the password."),
+    ("name or service not known", "The host name in SUPABASE_DB_URL does not exist. Check for a typo, or an unencoded @ in the password."),
+    ("nodename nor servname", "The host name in SUPABASE_DB_URL does not exist. Check for a typo, or an unencoded @ in the password."),
+    ("timeout", "Connecting to the database timed out."),
+    ("invalid", "SUPABASE_DB_URL is not a valid connection string. Check for spaces, quotes or line breaks."),
+    ("missing", "SUPABASE_DB_URL is not a valid connection string. Check for spaces, quotes or line breaks."),
+)
+
+
+def ping_problem() -> Optional[str]:
+    """None if the database answers, otherwise a short reason that is safe to show."""
     try:
         with connect() as conn:
             conn.execute("select 1")
-        return True
-    except Exception:
-        return False
+        return None
+    except Exception as exc:
+        text = str(exc).lower()
+        for fragment, hint in _CONNECT_HINTS:
+            if fragment in text:
+                return hint
+        return f"Could not connect to the database ({type(exc).__name__})."
+
+
+def ping() -> bool:
+    return ping_problem() is None
 
 
 # --------------------------------------------------------------------------
