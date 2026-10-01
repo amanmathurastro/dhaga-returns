@@ -25,6 +25,74 @@ Both models must support tool calling on OpenRouter (the output schema is sent a
 forced tool call). The prompts are `CLASSIFY_SYSTEM_PROMPT` and `BRIEF_SYSTEM_PROMPT`
 in those files.
 
+## Pipeline flow
+What happens when "Run pipeline" is pressed, with the function and file that does each step.
+`◄── LangChain` marks the only places a model is called; everything else is plain code.
+
+```text
+ "Run pipeline" button
+        │  POST /pipeline/run
+        ▼
+ start_run()            routers/pipeline.py   creates a run row, status "running"
+        │
+        ▼
+ execute_run()          pipeline/run.py       runs in the background
+        │
+        ├─ 1. load tables from the database        db.py
+        ├─ 2. build the model functions            build_classifier(A), build_classifier(B),
+        │                                          build_brief_writer(B)
+        ├─ 3. process()  ◄── the whole chain, below
+        └─ 4. save results, mark run "done"        db.py
+
+
+ process()  in pipeline/run.py
+ ─────────────────────────────
+ All returns
+    │
+    ▼
+ Keep only "Other" returns          is_other()        load.py
+    │
+    ▼
+ Join return → order line           join_returns()    load.py
+      → SKU → vendor
+    │
+    ├── no vendor found ─────────────────────────────►  UNMATCHED
+    ▼
+ Remove phone numbers, emails       scrub_pii()       filters.py
+    │
+    ▼
+ Is it junk?                        junk_reason()     filters.py
+    │
+    ├── blank, "ok", emoji ──────────────────────────►  JUNK
+    ▼
+ route()                            classify.py       (many comments at once)
+    │
+    │   Model A classifies                  ◄── LangChain
+    │      ├─ valid and confident ──────────►  CLASSIFIED
+    │      └─ failed / unsure
+    │            ▼
+    │   Model B classifies                  ◄── LangChain
+    │      ├─ valid and confident ──────────►  CLASSIFIED
+    │      └─ failed / still unsure ────────►  UNCLASSIFIED
+    ▼
+ Rates, category averages, flags    aggregate()       aggregate.py
+    │
+    ▼
+ Pick the flagged vendors           brief_inputs()    run.py
+    │
+    ▼
+ Model B writes a brief             write_brief()     brief.py     ◄── LangChain
+    │
+    ▼
+ Check every number in it           check_brief()     brief.py
+    ├─ all match ───────────────────►  brief OK
+    └─ a number is wrong ───────────►  brief REJECTED
+```
+
+Every "Other" return ends in exactly one of four buckets: CLASSIFIED, JUNK, UNMATCHED or
+UNCLASSIFIED. Only the classified ones feed the vendor numbers. The same flow as rendered
+diagrams, plus what happens inside one model call, is in `docs/pipeline-flow.md`.
+
 ## Run locally (target: under 5 minutes)
 You need Python 3.11+, Node 20+, and a Supabase project (any Postgres works).
 
