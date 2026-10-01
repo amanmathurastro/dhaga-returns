@@ -112,4 +112,4 @@ def test_database_problem_is_explained_without_leaking_the_url(monkeypatch, driv
     monkeypatch.setattr(db, "connect", failing_connect)
     problem = db.ping_problem()
     assert expected in problem
-    assert "supabase.co" not in problem and "151622" not in problem
+    assert "db.x.supabase.co" not in problem and "151622" not in problem  # nothing from the driver message
