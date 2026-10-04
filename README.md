@@ -21,6 +21,13 @@ Two steps use a model, through LangChain and OpenRouter. Everything else is plai
 | Classify a comment | `backend/app/pipeline/classify.py` | Model A, then Model B for hard cases | 0 |
 | Write a vendor brief | `backend/app/pipeline/brief.py` | Model B | 0.2 |
 
+The models in use (set in `.env` locally and in the Render environment when deployed):
+
+| Role | OpenRouter model | Setting |
+|---|---|---|
+| Model A, cheap first pass | `google/gemini-3.5-flash-lite` | `MODEL_A_ID` |
+| Model B, stronger, OpenAI | `openai/gpt-4.1` | `MODEL_B_ID` |
+
 Both models must support tool calling on OpenRouter (the output schema is sent as a
 forced tool call). The prompts are `CLASSIFY_SYSTEM_PROMPT` and `BRIEF_SYSTEM_PROMPT`
 in those files.
@@ -251,10 +258,18 @@ order line ID, or vendor isn't stored per SKU.
 - Routing: [where, threshold chosen and why, what breaks without it]
 
 ### Models and temperatures
-- Model A: [OpenRouter ID] — why: [cost/latency/quality]
-- Model B: [OpenRouter ID] — why
-- Both support structured output / tool calling: [how we checked]
-- Temperatures: classify 0, retry 0, brief 0.2 — why
+- Model A: `google/gemini-3.5-flash-lite` — why: cheap ($0.30 in / $2.50 out per million
+  tokens), read Hinglish and Devanagari correctly in our tests, and from a different provider
+  than Model B, so its mistakes are less likely to be the same ones Model B makes.
+- Model B: `openai/gpt-4.1` — why: the strongest OpenAI model on OpenRouter that accepts a
+  temperature setting ($2.00 in / $8.00 out per million tokens). The newer GPT-6 models
+  ignore temperature, which would make the temperatures below untrue for Model B.
+- Both support structured output / tool calling: checked in OpenRouter's model list
+  (`supported_parameters` includes `tools` and `tool_choice`), then confirmed with real calls
+  through the chain.
+- Temperatures: classify 0, retry 0, brief 0.2 — why: [fill in]
+- Measured on the sample data: about 1,140 input and 60 output tokens per classification;
+  a full run of 83 comments costs about $0.05.
 
 ### Accuracy (from eval.py)
 - Model A alone: [x]% ; with routing: [y]% ; routed share: [z]%
