@@ -25,7 +25,10 @@ export default function SummaryPage() {
         title="Summary"
         explainer="What customers wrote when they picked “Other” as their return reason, sorted into reasons, and how much the system couldn't handle."
       />
-      <RunControl onFinished={summary.reload} />
+      <RunControl
+        onFinished={summary.reload}
+        shownRun={summary.status === "ready" ? summary.data.run : null}
+      />
 
       {summary.status === "loading" && <Loading what="Loading the latest results" />}
       {summary.status === "error" &&

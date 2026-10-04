@@ -8,7 +8,7 @@ Built for Neha, Category Head.
 - Classifies each "Other" return comment into a fixed reason list
 - Computes return rate per vendor per reason vs the category average
 - Flags vendors with unusually high vendor-caused return rates
-- Shows real comments as evidence, plus a short internal vendor brief
+- Lists each vendor's products (SKUs) with their units sold and return rates
 - Shows everything it could NOT handle (unmatched, junk, unclassified)
 
 It does not contact vendors, change size charts, or decide anything. Neha decides.
@@ -86,8 +86,8 @@ Leave it running.
 ### 6. Use it
 1. Open http://localhost:3000
 2. Press **Run pipeline** on the Summary page. It takes about 20 seconds.
-3. Look at **Vendors** (two vendors are flagged for fit in the sample data), click a vendor for its
-   comments and brief, check **Gaps** for what the system couldn't handle, and paste your own
+3. Look at **Vendors** (two vendors are flagged for fit in the sample data), click a vendor's
+   **SKUs ▸** link for its products, check **Gaps** for what the system couldn't handle, and paste your own
    comment on **Try a comment**.
 
 API docs are at http://localhost:8000/docs.
@@ -209,7 +209,7 @@ The sample data in `backend/data/` is NOT Dhaga's real data. See `backend/data/R
 - Model call fails or is unsure → retried on a stronger model → else marked "couldn't classify"
 - Return can't be matched to an order/vendor → shown as "unmatched"
 - Junk text → counted, never sent to a model
-- Vendor brief numbers don't match the table → brief hidden, page says why
+- Vendor brief numbers don't match the table → brief rejected and stored with the reason
 - Missing config → app refuses to start and names the missing variable
 - A whole run fails → it is marked failed with the reason; the previous successful run stays on screen
 

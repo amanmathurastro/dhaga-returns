@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { EmptyState, Loaded, PageHeader, PartialNotice, RunLine } from "@/components/States";
+import { SkuDialog } from "@/components/SkuDialog";
 import { ReasonCell } from "@/components/VendorCells";
 import type { VendorRow, Vendors } from "@/lib/api";
 import { n, periodText } from "@/lib/format";
@@ -61,6 +62,7 @@ export default function VendorsPage() {
 
 function VendorTable({ data }: { data: Vendors }) {
   const [sort, setSort] = useState<Sort>(null);
+  const [skuRow, setSkuRow] = useState<VendorRow | null>(null);
   const rows = useMemo(() => {
     if (!sort) return data.rows;
     const sorted = [...data.rows].sort((a, b) => {
@@ -87,6 +89,7 @@ function VendorTable({ data }: { data: Vendors }) {
     const active = sort?.column === column;
     return (
       <th
+        key={column}
         scope="col"
         className={numeric ? "num" : undefined}
         aria-sort={active ? (sort.descending ? "descending" : "ascending") : undefined}
@@ -129,6 +132,7 @@ function VendorTable({ data }: { data: Vendors }) {
               {header("vendor", "Vendor")}
               {header("category", "Category")}
               {header("units", "Units sold", true)}
+              <th scope="col">Products</th>
               {reasonColumns.map((c) => header(c.reason, c.can_flag ? c.label : `${c.label} *`, true))}
             </tr>
           </thead>
@@ -136,11 +140,21 @@ function VendorTable({ data }: { data: Vendors }) {
             {rows.map((row) => (
               <tr key={`${row.vendor_id}-${row.category}`}>
                 <th scope="row">
-                  <Link href={`/vendors/${encodeURIComponent(row.vendor_id)}`}>{row.vendor_name}</Link>
+                  {row.vendor_name}
                   {row.city && <div className="cell-sub">{row.city}</div>}
                 </th>
                 <td>{row.category_label}</td>
                 <td className="num">{n(row.units_sold)}</td>
+                <td>
+                  <button
+                    type="button"
+                    className="link-button nowrap"
+                    onClick={() => setSkuRow(row)}
+                    aria-haspopup="dialog"
+                  >
+                    {row.skus.length} {row.skus.length === 1 ? "SKU" : "SKUs"} ▸
+                  </button>
+                </td>
                 {row.cells.map((cell) => (
                   <ReasonCell key={cell.reason} cell={cell} />
                 ))}
@@ -149,6 +163,7 @@ function VendorTable({ data }: { data: Vendors }) {
           </tbody>
         </table>
       </div>
+      <SkuDialog row={skuRow} onClose={() => setSkuRow(null)} />
       <p className="footnote">
         * Colour or look not matching the photos could be the vendor's fabric or Dhaga's own photos, so it is shown
         but never flagged against a vendor.

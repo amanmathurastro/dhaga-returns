@@ -96,6 +96,11 @@ class RunList(BaseModel):
     runs: list[RunInfo]
 
 
+class DateRange(BaseModel):
+    first_order_date: Optional[date]
+    last_order_date: Optional[date]
+
+
 class CoverageItem(BaseModel):
     key: Literal["classified", "junk", "unmatched", "unclassified"]
     label: str
@@ -134,6 +139,21 @@ class CellOut(BaseModel):
     flagged: bool
 
 
+class SkuRate(BaseModel):
+    reason: str
+    returns: int
+    rate: Optional[float]  # None when nothing was sold in the period
+
+
+class VendorSku(BaseModel):
+    sku_id: str
+    product_name: Optional[str]
+    is_live: Optional[bool]
+    units_sold: int  # in the run's period
+    returns: int  # classified returns, all reasons
+    rates: list[SkuRate]  # same reasons as the vendor table's cells
+
+
 class VendorRow(BaseModel):
     vendor_id: str
     vendor_name: str
@@ -144,6 +164,7 @@ class VendorRow(BaseModel):
     returns_total: int
     cells: list[CellOut]
     flagged: bool
+    skus: list[VendorSku] = []  # every SKU this vendor has in this category, live or pulled; most returns first
 
 
 class Thresholds(BaseModel):

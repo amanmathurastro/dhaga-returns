@@ -5,6 +5,7 @@ function the run used, and with the thresholds stored on the run, so the table
 always agrees with the numbers the vendor briefs were checked against.
 """
 
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 from typing import Optional
 from uuid import UUID
@@ -14,7 +15,7 @@ from app.config import get_settings
 from app.errors import ApiError
 from app.pipeline.aggregate import ClassifiedReturn, Sale, Segment, aggregate
 from app.pipeline.filters import JUNK_REASON_LABELS, scrub_pii
-from app.schemas import CellOut, CommentOut, RunInfo, Thresholds, VendorRow
+from app.schemas import CellOut, CommentOut, RunInfo, SkuRate, Thresholds, VendorRow, VendorSku
 from app.taxonomy import (
     FIT_DIRECTION_LABELS,
     REASON_INFO,
@@ -66,6 +67,7 @@ class RunView:
     segments: list[Segment]
     thresholds: Thresholds
     vendors: dict[str, dict]
+    skus: dict[tuple[str, str], list[VendorSku]]  # (vendor_id, category) -> SKUs, most returns first
 
     def with_status(self, status: str) -> list[dict]:
         return [r for r in self.rows if r["status"] == status]
@@ -98,10 +100,46 @@ def load_run_view(conn, run_id: Optional[UUID]) -> RunView:
         lift_threshold=thresholds.lift_threshold,
     )
     vendors = {v["vendor_id"]: v for v in db.fetch_vendors(conn)}
-    return RunView(run, rows, sales, returns, segments, thresholds, vendors)
+    return RunView(run, rows, sales, returns, segments, thresholds, vendors, sku_lines(db.fetch_skus(conn), sales, returns))
 
 
-def vendor_row(seg: Segment, vendors: dict[str, dict]) -> VendorRow:
+def sku_lines(
+    skus: list[dict], sales: list[Sale], returns: list[ClassifiedReturn]
+) -> dict[tuple[str, str], list[VendorSku]]:
+    """Every SKU per (vendor, category) with its units sold and return rates, most returns first."""
+    sold: Counter[str] = Counter()
+    for s in sales:
+        sold[s.sku_id] += s.units
+    by_reason: dict[str, Counter[str]] = defaultdict(Counter)
+    for r in returns:
+        by_reason[r.sku_id][r.reason] += 1
+
+    out: dict[tuple[str, str], list[VendorSku]] = {}
+    for sku in skus:
+        if sku["vendor_id"] is None:
+            continue
+        units, counts = sold[sku["sku_id"]], by_reason[sku["sku_id"]]
+        out.setdefault((sku["vendor_id"], sku["category"] or UNKNOWN_CATEGORY), []).append(
+            VendorSku(
+                sku_id=sku["sku_id"],
+                product_name=sku["product_name"],
+                is_live=sku["is_live"],
+                units_sold=units,
+                returns=sum(counts.values()),
+                rates=[
+                    SkuRate(reason=reason, returns=counts[reason], rate=counts[reason] / units if units else None)
+                    for reason in VENDOR_TABLE_REASONS
+                ],
+            )
+        )
+    for lines in out.values():
+        lines.sort(key=lambda line: (-line.returns, line.sku_id))
+    return out
+
+
+
+
+def vendor_row(seg: Segment, vendors: dict[str, dict], skus: dict[tuple[str, str], list[VendorSku]]) -> VendorRow:
     vendor = vendors.get(seg.vendor_id, {})
     return VendorRow(
         vendor_id=seg.vendor_id,
@@ -125,6 +163,7 @@ def vendor_row(seg: Segment, vendors: dict[str, dict]) -> VendorRow:
             for reason in VENDOR_TABLE_REASONS
         ],
         flagged=seg.flagged,
+        skus=skus.get((seg.vendor_id, seg.category), []),
     )
 
 

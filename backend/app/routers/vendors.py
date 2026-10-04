@@ -42,7 +42,7 @@ def vendors(
     with db.connect() as conn:
         view = load_run_view(conn, run_id)
 
-    rows = [vendor_row(s, view.vendors) for s in view.segments if category is None or s.category == category]
+    rows = [vendor_row(s, view.vendors, view.skus) for s in view.segments if category is None or s.category == category]
     # Flagged first, then by the worst vendor-caused multiple of the category average.
     rows.sort(
         key=lambda r: (
@@ -105,7 +105,7 @@ def vendor_detail(vendor_id: str, run_id: Optional[UUID] = None) -> VendorDetail
         vendor_id=vendor_id,
         vendor_name=vendor["name"],
         city=vendor.get("city"),
-        segments=[vendor_row(s, view.vendors) for s in segments],
+        segments=[vendor_row(s, view.vendors, view.skus) for s in segments],
         fit_directions=_label_counts(directions, FIT_DIRECTION_LABELS),
         fit_areas=_label_counts(areas, FIT_AREA_LABELS),
         top_skus=[

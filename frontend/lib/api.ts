@@ -70,6 +70,11 @@ export interface RunList {
   runs: RunInfo[];
 }
 
+export interface DateRange {
+  first_order_date: string | null;
+  last_order_date: string | null;
+}
+
 export type CoverageKey = "classified" | "junk" | "unmatched" | "unclassified";
 
 export interface CoverageItem {
@@ -112,6 +117,15 @@ export interface Cell {
   flagged: boolean;
 }
 
+export interface VendorSku {
+  sku_id: string;
+  product_name: string | null;
+  is_live: boolean | null;
+  units_sold: number;
+  returns: number;
+  rates: { reason: string; returns: number; rate: number | null }[];
+}
+
 export interface VendorRow {
   vendor_id: string;
   vendor_name: string;
@@ -122,6 +136,7 @@ export interface VendorRow {
   returns_total: number;
   cells: Cell[];
   flagged: boolean;
+  skus: VendorSku[];
 }
 
 export interface Thresholds {
@@ -138,23 +153,6 @@ export interface Vendors {
   unmatched: number;
 }
 
-export interface LabelCount {
-  key: string;
-  label: string;
-  count: number;
-}
-
-export interface Sku {
-  sku_id: string;
-  product_name: string | null;
-  category_label: string;
-  is_live: boolean | null;
-  units_sold: number;
-  returns: number;
-  rate: number | null;
-  top_reason_label: string | null;
-}
-
 export interface Comment {
   return_id: string;
   text: string;
@@ -167,39 +165,6 @@ export interface Comment {
   product_name: string | null;
   model_used: string | null;
   confidence: number | null;
-}
-
-export interface BriefClaim {
-  text: string;
-  metric_key: string;
-  value: number;
-}
-
-export interface Brief {
-  status: "ok" | "rejected_numbers_mismatch" | "failed" | "not_written";
-  brief: {
-    vendor_id: string;
-    headline: string;
-    claims: BriefClaim[];
-    example_comment_ids: string[];
-    caveats: string[];
-  } | null;
-  problems: string[];
-}
-
-export interface VendorDetail {
-  run: RunInfo;
-  thresholds: Thresholds;
-  vendor_id: string;
-  vendor_name: string;
-  city: string | null;
-  segments: VendorRow[];
-  fit_directions: LabelCount[];
-  fit_areas: LabelCount[];
-  top_skus: Sku[];
-  comments: Comment[];
-  comments_total: number;
-  brief: Brief;
 }
 
 export interface NonVendorGroup {

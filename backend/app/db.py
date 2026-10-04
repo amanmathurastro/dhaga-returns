@@ -102,6 +102,11 @@ def fetch_sales(conn, period_start: Optional[date], period_end: Optional[date]) 
     ).fetchall()
 
 
+def order_date_range(conn) -> Row:
+    """First and last order date in the data (both None when there are no orders)."""
+    return conn.execute("select min(order_date) as first, max(order_date) as last from orders").fetchone()
+
+
 # --------------------------------------------------------------------------
 # Pipeline runs
 # --------------------------------------------------------------------------

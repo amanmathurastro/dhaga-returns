@@ -8,7 +8,7 @@ from app.config import get_settings
 from app.errors import ApiError
 from app.pipeline.run import execute_run, run_params
 from app.reporting import run_info
-from app.schemas import RunInfo, RunList, RunRequest, RunStarted
+from app.schemas import DateRange, RunInfo, RunList, RunRequest, RunStarted
 
 router = APIRouter(prefix="/pipeline", tags=["pipeline"])
 
@@ -30,6 +30,14 @@ def start_run(background: BackgroundTasks, body: Optional[RunRequest] = None) ->
         raise ApiError(409, "run_in_progress", "A pipeline run is already in progress. Wait for it to finish.")
     background.add_task(execute_run, run_id, body.period_start, body.period_end)
     return RunStarted(run_id=str(run_id))
+
+
+@router.get("/date-range", response_model=DateRange)
+def date_range() -> DateRange:
+    """The span of order dates in the data, used to pre-fill the period on the Run pipeline form."""
+    with db.connect() as conn:
+        row = db.order_date_range(conn)
+    return DateRange(first_order_date=row["first"], last_order_date=row["last"])
 
 
 @router.get("/runs", response_model=RunList)
