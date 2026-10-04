@@ -74,11 +74,6 @@ function SummaryBody({ data }: { data: Summary }) {
           value={n(data.flagged_vendors)}
           note={<Link href="/vendors">See the vendor table</Link>}
         />
-        <StatTile
-          label="Needed the stronger model"
-          value={n(data.routed_to_model_b)}
-          note="comments Model A failed on or was unsure about"
-        />
       </section>
 
       <section className="card">
