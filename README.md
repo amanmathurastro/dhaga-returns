@@ -368,3 +368,8 @@ Mark which numbers come from the brief and which are our estimates.]
 
 ## More docs
 - `docs/pipeline-flow.md` — the pipeline as rendered diagrams, including what happens inside one model call
+
+## Pipeline overview (diagram)
+![Pipeline overview: Load Other returns, join to SKU and vendor, filter junk text, classify with Model A (retry on Model B if low confidence), rate by vendor and reason against the category average, write vendor brief, dashboard for Neha, Neha reviews and acts. Unmatched, junk and couldn't-classify returns go to failure buckets; non-vendor reasons are shown separately.](docs/pipeline-overview.png)
+
+Legend: gray = code, purple = model call, coral = failure bucket, green = human.
