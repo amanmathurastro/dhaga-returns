@@ -13,6 +13,97 @@ Built for Neha, Category Head.
 
 It does not contact vendors, change size charts, or decide anything. Neha decides.
 
+## Getting started
+Live version: frontend https://dhaga-returns.vercel.app · backend https://dhaga-returns-api.onrender.com/health
+
+The steps below run it on your own machine in about 5 minutes.
+
+### What you need first
+- **Python 3.11 or newer** and **Node.js 20 or newer** (`python3 --version`, `node --version`)
+- **A Postgres database**: a Supabase project, or Postgres installed on your machine
+- **An OpenRouter API key** with a little credit (https://openrouter.ai/keys). One full run on the sample data costs about $0.05.
+- **Access to this repository** (it is private)
+
+### 1. Get the code
+```bash
+git clone https://github.com/amanmathurastro/dhaga-returns.git
+cd dhaga-returns
+```
+
+### 2. Create your `.env`
+```bash
+cp .env.example .env
+```
+Open `.env` (in the repository root, not inside `backend/` or `frontend/`) and fill in:
+
+| Variable | What to put |
+|---|---|
+| `OPENROUTER_API_KEY` | your OpenRouter key |
+| `MODEL_A_ID` | `google/gemini-3.5-flash-lite` |
+| `MODEL_B_ID` | `openai/gpt-4.1` |
+| `SUPABASE_DB_URL` | your database connection string, see step 3 |
+| `CONFIDENCE_THRESHOLD` | `0.7` (starting value until it is calibrated with `eval.py`) |
+| `MIN_RETURNS_TO_FLAG` | `5` (starting value) |
+| `LIFT_THRESHOLD` | `2` (starting value) |
+
+Leave the rest as they are. The backend refuses to start until every value above is set,
+and its error message names the missing ones.
+
+### 3. Create the database tables
+Pick one.
+
+**Supabase**
+1. In the Supabase dashboard open **SQL Editor**, paste the whole of `supabase/schema.sql`, and run it.
+2. Click **Connect** (top bar) → **Session pooler**, copy the URI, put your database password in it,
+   and use that as `SUPABASE_DB_URL`. If the password contains `@`, write it as `%40`.
+
+**Postgres on your machine**
+```bash
+createdb dhaga
+psql -d dhaga -f supabase/schema.sql
+```
+and set `SUPABASE_DB_URL=postgresql://localhost/dhaga`.
+
+### 4. Start the backend (terminal 1)
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+python scripts/seed.py             # loads the sample data from backend/data/
+uvicorn app.main:app --reload --port 8000
+```
+Leave it running. Check http://localhost:8000/health shows `"database":"ok"`.
+
+### 5. Start the frontend (terminal 2)
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Leave it running.
+
+### 6. Use it
+1. Open http://localhost:3000
+2. Press **Run pipeline** on the Summary page. It takes about 20 seconds.
+3. Look at **Vendors** (two vendors are flagged for fit in the sample data), click a vendor for its
+   comments and brief, check **Gaps** for what the system couldn't handle, and paste your own
+   comment on **Try a comment**.
+
+API docs are at http://localhost:8000/docs.
+
+### If something doesn't work
+| What you see | What to do |
+|---|---|
+| `Dhaga Returns can't start. Missing config: ...` | Fill in the named values in `.env`, then start the backend again. |
+| `/health` shows `"database":"unreachable"` | Read `database_problem` in the same response; it says what is wrong with `SUPABASE_DB_URL`. |
+| Pages say "Can't reach the backend" | Check the backend terminal is still running on port 8000. If you changed the port, set `NEXT_PUBLIC_API_BASE_URL` in `.env` and restart `npm run dev`. |
+| `Address already in use` | Something else is on that port. Stop it, or start on another port and update `NEXT_PUBLIC_API_BASE_URL`. |
+| Every comment lands in "Couldn't classify" | The Gaps page shows the reason for each one: usually a wrong OpenRouter key, no credit left, or a model that doesn't support tool calling. |
+| You changed `.env` and nothing changed | Restart the backend. For `NEXT_PUBLIC_API_BASE_URL`, restart the frontend too. |
+
+To start again from a clean database: `python scripts/seed.py --reset` (deletes all data and past runs, then reloads the sample).
+
 ## Where the model is called
 Two steps use a model, through LangChain and OpenRouter. Everything else is plain code.
 
@@ -99,30 +190,6 @@ What happens when "Run pipeline" is pressed, with the function and file that doe
 Every "Other" return ends in exactly one of four buckets: CLASSIFIED, JUNK, UNMATCHED or
 UNCLASSIFIED. Only the classified ones feed the vendor numbers. The same flow as rendered
 diagrams, plus what happens inside one model call, is in `docs/pipeline-flow.md`.
-
-## Run locally (target: under 5 minutes)
-You need Python 3.11+, Node 20+, and a Supabase project (any Postgres works).
-
-1. Copy `.env.example` to `.env` and fill in the values. The backend refuses to
-   start until every required value is set, and names the missing ones.
-2. Create tables: run `supabase/schema.sql` in the Supabase SQL editor.
-3. Backend:
-   ```bash
-   cd backend
-   python3 -m venv .venv && source .venv/bin/activate
-   pip install -r requirements.txt
-   python scripts/seed.py
-   uvicorn app.main:app --reload
-   ```
-4. Frontend (second terminal):
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-5. Open http://localhost:3000 and press "Run pipeline".
-
-Check the backend is healthy at http://localhost:8000/health. API docs: http://localhost:8000/docs.
 
 ## Tests and evaluation
 ```bash
