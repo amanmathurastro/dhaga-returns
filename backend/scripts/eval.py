@@ -131,7 +131,7 @@ def main() -> int:
 
     if threshold is None:
         print("\nCONFIDENCE_THRESHOLD is not set yet. Pick one from the table above, put it in .env,\n"
-              "and defend the choice in docs/build-note.md.")
+              "and defend the choice in the "Build note" section of README.md.")
     else:
         routed_pairs = [(r.label, routed_guess(r, threshold)[0]) for r in rows]
         print(f"\n== A+B routing at threshold {threshold:.2f}, per reason (correct / total) ==")
